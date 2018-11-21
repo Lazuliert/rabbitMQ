@@ -1,6 +1,4 @@
-import pika
 from tree import tree
-import string
 import pika
 
 
@@ -11,7 +9,7 @@ class Node :
             self.neighbors = tree[id]["neighbors"]
             if id == "A" :
                 self.holder = "A"
-                self.send(".".join(self.neighbors), "I")
+                self.messageSender(".".join(self.neighbors), "I")
             else:
                 self.holder = ""
 
@@ -27,57 +25,92 @@ class Node :
             # False otherwise.
             self.asked = False
 
-            self.createConnection(self)
+            self.createReceiveQueue()
+            self.beginReceiver()
+
 
         else:
             raise Exception("Id not valid")
-    def passPriviledge(self):
+
+    def passPrivilege(self):
         if self.requestQueue[0] != self.id:
             receiver = self.requestQueue.pop()
-            self.send(receiver,P)
+            self.messageSender(receiver,"P")
 
 
+    def receiveManager(self, message):
+        message = message.decode('UTF-8')
+        sender = message[0]
+        mtype = message[1]
+        print("sender" + sender)
+        print("mtype" + mtype)
+        print(type(message))
+        print((type(message)))
+        if mtype =="I":
+            print("INITIALIZE message from node " + sender + " received")
+            self.messageSender(".".join(self.neighbors), "I")
+        elif mtype =="P":
+            print("PRIVILEGE message from node " + sender + " received")
+        elif mtype =="Q":
+            print("REQUEST message from node " + sender + " received")
+        elif mtype =="S":
+            print("RESTART message from node " + sender + " received")
+        elif mtype == "W":
+            print("ADVISE_1 message from node " + sender + " received")
+        elif mtype == "X":
+            print("ADVISE_2 message from node " + sender + " received")
+        elif mtype == "Y":
+            print("ADVISE_3 message from node " + sender + " received")
+        elif mtype == "Z":
+            print("ADVISE_4 message from node " + sender + " received")
+        else:
+            print("I DO NOT KNOW")
+            print("sender"+sender)
+            print("mtype"+mtype)
 
-    def createConnection(self):
+
+    def createReceiveQueue(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         self.channel = connection.channel()
         self.channel.exchange_declare(exchange='topic_KRaymond',
                                  exchange_type='topic')
         result = self.channel.queue_declare(exclusive=True)
-        queue_name = result.method.queue
+        self.queue_name = result.method.queue
         binding_key = "#."+ self.id +".#"
         self.channel.queue_bind(exchange='topic_KRaymond',
-                           queue = queue_name,
+                           queue = self.queue_name,
                            routing_key=binding_key)
         print(" *** Node " + self.id +" declared queue with binding key " + binding_key + " .")
 
 
-        def callback(ch, method, properties, body):
-            print(" [x] routing_key ; body %r:%r" % (method.routing_key, body))
 
-        self.channel.basic_consume(callback,
-                              queue=queue_name,
-                              no_ack=True)
-        return self.channel
+
 
     def beginReceiver(self):
         """This function is blocking"""
-        print(" *** Node " + self.id +" waiting for messages with binding key " + binding_key + " .To exit press CTRL+C")
+        print(" *** Node " + self.id + " waiting for messages .To exit press CTRL+C")
 
+        def callback(obj, ch, method, properties, body):
+            print(" [x] routing_key ; body %r:%r" % (method.routing_key, body))
+            obj.receiveManager(body)
 
-    def messageSender(self,destination, message):
+        self.channel.basic_consume(lambda ch, method, properties, body: callback(self, ch, method, properties, body),
+                              queue=self.queue_name,
+                              no_ack=True)
+        self.channel.start_consuming()
+
+    def messageSender(self, destination, message):
 
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         channel = connection.channel()
 
-        payload = self.id + message
         channel.exchange_declare(exchange='topic_KRaymond',
                                  exchange_type='topic')
 
-        channel.basic_publish(exchange='topic_logs',
+        payload = self.id + message
+
+        channel.basic_publish(exchange='topic_KRaymond',
                               routing_key=destination,
                               body=payload)
         print(" [x] Sent %r:%r" % (destination, payload))
         connection.close()
-
-node = Node("A")
