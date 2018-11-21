@@ -33,6 +33,6 @@ class Node :
     def passPriviledge(self):
         if self.requestQueue[0] != self.id:
             receiver = self.requestQueue.pop()
-            self.send(receiver,P
+            self.send(receiver,P)
 
 node = Node("A")
