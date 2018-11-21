@@ -1,3 +1,4 @@
+import pika
 from tree import tree
 
 
@@ -21,11 +22,55 @@ class Node :
             #True when non priviledged holder has send a request message to the current holder. False otherwise.
             self.asked = False
 
-
+            self.createConnection(self)
 
         else:
             raise Exception("Id not valid")
 
+
+
+
+    def createConnection(self):
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        self.channel = connection.channel()
+        self.channel.exchange_declare(exchange='topic_KRaymond',
+                                 exchange_type='topic')
+        result = self.channel.queue_declare(exclusive=True)
+        queue_name = result.method.queue
+        binding_key = "#."+ self.id +".#"
+        self.channel.queue_bind(exchange='topic_KRaymond',
+                           queue = queue_name,
+                           routing_key=binding_key)
+        print(" *** Node " + self.id +" declared queue with binding key " + binding_key + " .")
+
+
+        def callback(ch, method, properties, body):
+            print(" [x] routing_key ; body %r:%r" % (method.routing_key, body))
+
+        self.channel.basic_consume(callback,
+                              queue=queue_name,
+                              no_ack=True)
+        return self.channel
+
+    def beginReceiver(self):
+        """This function is blocking"""
+        print(" *** Node " + self.id +" waiting for messages with binding key " + binding_key + " .To exit press CTRL+C")
+
+
+    def messageSender(self,destination, message):
+
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        channel = connection.channel()
+
+        payload = self.id + message
+        channel.exchange_declare(exchange='topic_KRaymond',
+                                 exchange_type='topic')
+
+        channel.basic_publish(exchange='topic_logs',
+                              routing_key=destination,
+                              body=payload)
+        print(" [x] Sent %r:%r" % (destination, payload))
+        connection.close()
 
 node = Node("A")
 print(node.neighbors)
