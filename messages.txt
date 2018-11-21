@@ -1,20 +1,26 @@
 - message initialize : 
     envoyeur : le noeud qui possède le token en premier / le neoud qui le reçoit et qui l'envoie à ses autres voisins
-    recepteur : tous les voisins de l'envoyeur
+    recepteur : tous les voisins de l'envoyeur -->I
     
 - message privilege (correspond au passage du token)
     envoyeur : porteur courant du token
-    recepteur : le nouveau porteur du token (pas forcément celui qui va l'utiliser)
+    recepteur : le nouveau porteur du token (pas forcément celui qui va l'utiliser) -->P
     
-- message request (demande de jeton)
+- message request (demande de jeton) -->Q
     envoyeur : n'importe quel noeud non porteur du token
     recepteur : le holder du point de vue du noeud envoyeur
 
-- message restart (message envoyé à un noeud qui est mort)
+- message restart (message envoyé à un noeud qui est mort) -->S
     envoyeur : un noeud qui est mort
     recepteur : tous ses voisins
 
-- message advise (message envoyé par tous les noeuds qui ont reçu le message restart au à l'envoyeur du message restart)
+- message advise (message envoyé par tous les noeuds qui ont reçu le message restart au à l'envoyeur du message restart) -->W,X,Y,Z
     envoyeur : les noeuds qui ont reçu le message restart
     recepteur : le noeud qui a restart
-    contenu : 1,2,3,4,5,6,7
+    contenu : 1,2,3,4
+    
+topic message partout :
+- un noeud s'inscrit aux keys suivantes :
+    #.<id>.#
+    
+    
