@@ -27,7 +27,7 @@ class ResourceUserThread(threading.Thread):
         self.inCriticalSection = True
         self.privilege = Privilege(self.id)
 
-thread = ResourceUserThread("A")
-thread.start()
-time.sleep(5)
-thread.enterCriticalSection()
+# thread = ResourceUserThread("A")
+# thread.start()
+# time.sleep(5)
+# thread.enterCriticalSection()

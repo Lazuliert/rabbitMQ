@@ -1,3 +1,4 @@
+from ResourceUserThread import ResourceUserThread
 from tree import tree
 import pika
 import time
@@ -26,11 +27,16 @@ class Node :
             self.asked = False
 
             self.createReceiveQueue()
+
+            thread = ResourceUserThread(id)
+
             self.beginReceiver()
 
 
         else:
             raise Exception("Id not valid")
+
+
 
     def passPrivilege(self):
         if self.requestQueue[0] != self.id:
@@ -148,3 +154,5 @@ class Node :
                               body=payload)
         print(" [x] Sent %r:%r" % (destination, payload))
         connection.close()
+
+node1 = Node("A")
