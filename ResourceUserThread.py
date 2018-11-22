@@ -26,9 +26,6 @@ class ResourceUserThread(threading.Thread):
         print("entering critical section")
         self.inCriticalSection = True
         self.privilege = Privilege(self.id)
-        request = input("type anything to stop using privilege")
-        print("input2",request)
-
 
 thread = ResourceUserThread("A")
 thread.start()
