@@ -1,6 +1,6 @@
 from tree import tree
 import pika
-
+import time
 
 class Node :
     def __init__(self, id):
@@ -37,22 +37,36 @@ class Node :
             receiver = self.requestQueue.pop()
             self.messageSender(receiver,"P")
 
+    def statusPrinter(self, statusMessage = ""):
+        if statusMessage !="":
+            statusMessage= "Status of node " + self.id
+        print(statusMessage)
+        print("holder : " + self.holder)
+        print("request_q : " + str(self.requestQueue))
+        print("using : " + str(self.using))
+        print("asked : " + str(self.asked))
 
     def receiveManager(self, message):
+        print("#####Message Received !#####")
         message = message.decode('UTF-8')
         sender = message[0]
         mtype = message[1]
         print("sender" + sender)
         print("mtype" + mtype)
-        print(type(message))
-        print((type(message)))
+        self.statusPrinter()
         if mtype =="I":
             print("INITIALIZE message from node " + sender + " received")
-            self.messageSender(".".join(self.neighbors), "I")
+            self.initialize(sender)
         elif mtype =="P":
             print("PRIVILEGE message from node " + sender + " received")
+            self.holder = self.id
+            self.assign_privilege()
+            self.make_request()
         elif mtype =="Q":
             print("REQUEST message from node " + sender + " received")
+            self.requestQueue.add(sender)
+            self.assign_privilege()
+            self.make_request()
         elif mtype =="S":
             print("RESTART message from node " + sender + " received")
         elif mtype == "W":
@@ -67,24 +81,44 @@ class Node :
             print("I DO NOT KNOW")
             print("sender"+sender)
             print("mtype"+mtype)
+        print("New status :")
+        self.statusPrinter()
+        print("#####End of message treatment#####")
 
+    def initialize(self,sender):
+        self.messageSender(".".join([x for x in filter(lambda x: x != sender, self.neighbors)]), "I")
+        self.holder = sender
+
+    def assign_privilege(self):
+        if (self.holder==self.id)&(self.using==False)&(self.requestQueue!=[]):
+            self.holder = self.requestQueue.pop(0)
+            self.asked = False
+            if self.holder==self.id:
+                self.using = True
+                self.critical_section()
+            else:
+                self.messageSender(self.holder, "P")
+
+    def make_request(self):
+        if (self.holder!=self.id)&(self.requestQueue!=[])&(self.asked==False):
+            self.messageSender(self.holder, "Q")
+            self.asked = True
+
+    def critical_section(self):
+        time.sleep(3)
 
     def createReceiveQueue(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         self.channel = connection.channel()
         self.channel.exchange_declare(exchange='topic_KRaymond',
-                                 exchange_type='topic')
+                                      exchange_type='topic')
         result = self.channel.queue_declare(exclusive=True)
         self.queue_name = result.method.queue
         binding_key = "#."+ self.id +".#"
         self.channel.queue_bind(exchange='topic_KRaymond',
-                           queue = self.queue_name,
-                           routing_key=binding_key)
+                                queue = self.queue_name,
+                                routing_key=binding_key)
         print(" *** Node " + self.id +" declared queue with binding key " + binding_key + " .")
-
-
-
-
 
     def beginReceiver(self):
         """This function is blocking"""
@@ -95,22 +129,24 @@ class Node :
             obj.receiveManager(body)
 
         self.channel.basic_consume(lambda ch, method, properties, body: callback(self, ch, method, properties, body),
-                              queue=self.queue_name,
-                              no_ack=True)
+                                   queue=self.queue_name,
+                                   no_ack=True)
         self.channel.start_consuming()
 
     def messageSender(self, destination, message):
+        if destination.replace('.', '')!='':
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+            channel = connection.channel()
 
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-        channel = connection.channel()
+            channel.exchange_declare(exchange='topic_KRaymond',
+                                     exchange_type='topic')
 
-        channel.exchange_declare(exchange='topic_KRaymond',
-                                 exchange_type='topic')
+            payload = self.id + message
 
-        payload = self.id + message
-
-        channel.basic_publish(exchange='topic_KRaymond',
-                              routing_key=destination,
-                              body=payload)
-        print(" [x] Sent %r:%r" % (destination, payload))
-        connection.close()
+            channel.basic_publish(exchange='topic_KRaymond',
+                                  routing_key=destination,
+                                  body=payload)
+            print(" [x] Sent %r:%r" % (destination, payload))
+            connection.close()
+        else:
+            print("Message : " + message + "has not been sent because destination was empty")
