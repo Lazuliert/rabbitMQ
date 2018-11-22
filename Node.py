@@ -86,7 +86,11 @@ class Node :
         print("#####End of message treatment#####")
 
     def initialize(self,sender):
-        self.messageSender(".".join([x for x in filter(lambda x: x != sender, self.neighbors)]), "I")
+        receivers = []
+        for neighbor in self.neighbors :
+            if neighbor != sender:
+                receivers.append(neighbor)
+        self.messageSender(".".join(receivers), "I")
         self.holder = sender
 
     def assign_privilege(self):
@@ -134,19 +138,16 @@ class Node :
         self.channel.start_consuming()
 
     def messageSender(self, destination, message):
-        if destination.replace('.', '')!='':
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-            channel = connection.channel()
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        channel = connection.channel()
 
-            channel.exchange_declare(exchange='topic_KRaymond',
-                                     exchange_type='topic')
+        channel.exchange_declare(exchange='topic_KRaymond',
+                                 exchange_type='topic')
 
-            payload = self.id + message
+        payload = self.id + message
 
-            channel.basic_publish(exchange='topic_KRaymond',
-                                  routing_key=destination,
-                                  body=payload)
-            print(" [x] Sent %r:%r" % (destination, payload))
-            connection.close()
-        else:
-            print("Message : " + message + "has not been sent because destination was empty")
+        channel.basic_publish(exchange='topic_KRaymond',
+                              routing_key=destination,
+                              body=payload)
+        print(" [x] Sent %r:%r" % (destination, payload))
+        connection.close()
