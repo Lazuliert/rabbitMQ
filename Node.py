@@ -85,7 +85,7 @@ class Node :
         self.statusPrinter()
         print("#####End of message treatment#####")
 
-    def initialize(self,sender):
+    def initialize(self, sender):
         self.messageSender(".".join([x for x in filter(lambda x: x != sender, self.neighbors)]), "I")
         self.holder = sender
 
