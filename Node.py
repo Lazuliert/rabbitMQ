@@ -29,7 +29,7 @@ class Node :
             self.createReceiveQueue()
 
             thread = ResourceUserThread(id)
-
+            thread.start()
             self.beginReceiver()
 
 
