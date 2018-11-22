@@ -75,7 +75,7 @@ class Node :
             print("ADVISE_4 message from node " + sender + " received")
         else:
             print("I DO NOT KNOW")
-            
+
         print("New status :")
         self.statusPrinter()
         print("#####End of message treatment#####")
