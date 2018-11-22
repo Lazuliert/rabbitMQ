@@ -1,5 +1,5 @@
 from Privilege import Privilege
-from ResourceUserThread import ResourceUserThread
+import threading
 from tree import tree
 import pika
 import time
@@ -51,7 +51,7 @@ class Node :
 
             self.createReceiveQueue()
 
-            thread = ResourceUserThread(id)
+            thread = self.ResourceUserThread(id)
             thread.start()
             self.beginReceiver()
 
@@ -59,7 +59,8 @@ class Node :
         else:
             raise Exception("Id not valid")
 
-
+    def fonction_inutile(self):
+        print("inutile")
 
     def passPrivilege(self):
         if self.requestQueue[0] != self.id:
