@@ -15,10 +15,10 @@ class Privilege :
         print(self.holder+" se déconnecte")
         Privilege.inUse = False
 
-print("A demande le privilège")
-print(Privilege.inUse)
-privilege = Privilege("A")
-privilege.deconnexion()
-print("B demande le privilège")
-privilege = Privilege("B")
-print(Privilege.path)
+# print("A demande le privilège")
+# print(Privilege.inUse)
+# privilege = Privilege("A")
+# privilege.deconnexion()
+# print("B demande le privilège")
+# privilege = Privilege("B")
+# print(Privilege.path)
