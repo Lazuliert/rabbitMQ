@@ -92,19 +92,14 @@ class Node :
             self.holder = sender
 
     def assign_privilege(self):
-        if (self.holder==self.id)&(self.using==False)&(self.requestQueue!=[]):
+        if (self.holder == self.id) & (self.using == False) & (self.requestQueue!=[]):
             self.holder = self.requestQueue.pop(0)
             self.asked = False
-            if self.holder==self.id:
+            if self.holder == self.id:
                 self.using = True
                 self.critical_section()
             else:
                 self.messageSender(self.holder, "P")
-
-    def make_request(self):
-        if (self.holder!=self.id)&(self.requestQueue!=[])&(self.asked==False):
-            self.messageSender(self.holder, "Q")
-            self.asked = True
 
     def critical_section(self):
         sleep(3)
