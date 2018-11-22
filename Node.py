@@ -1,6 +1,6 @@
 from tree import tree
 import pika
-import time
+from time import sleep
 
 class Node :
     def __init__(self, id):
@@ -32,10 +32,6 @@ class Node :
         else:
             raise Exception("Id not valid")
 
-    def passPrivilege(self):
-        if self.requestQueue[0] != self.id:
-            receiver = self.requestQueue.pop()
-            self.messageSender(receiver,"P")
 
     def statusPrinter(self, statusMessage = ""):
         if statusMessage !="":
@@ -111,7 +107,7 @@ class Node :
             self.asked = True
 
     def critical_section(self):
-        time.sleep(3)
+        sleep(3)
 
     def createReceiveQueue(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
