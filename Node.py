@@ -86,12 +86,14 @@ class Node :
         print("#####End of message treatment#####")
 
     def initialize(self,sender):
-        receivers = []
-        for neighbor in self.neighbors :
-            if neighbor != sender:
-                receivers.append(neighbor)
-        self.messageSender(".".join(receivers), "I")
-        self.holder = sender
+        if self.neighbors == [sender]:
+            receivers = []
+            for neighbor in self.neighbors :
+                if neighbor != sender:
+                    receivers.append(neighbor)
+
+            self.messageSender(".".join(receivers), "I")
+            self.holder = sender
 
     def assign_privilege(self):
         if (self.holder==self.id)&(self.using==False)&(self.requestQueue!=[]):
