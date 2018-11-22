@@ -1,6 +1,7 @@
+from ResourceUserThread import ResourceUserThread
 from tree import tree
 import pika
-from time import sleep
+import time
 
 class Node :
     def __init__(self, id):
@@ -26,12 +27,21 @@ class Node :
             self.asked = False
 
             self.createReceiveQueue()
+
+            thread = ResourceUserThread(id)
+
             self.beginReceiver()
 
 
         else:
             raise Exception("Id not valid")
 
+
+
+    def passPrivilege(self):
+        if self.requestQueue[0] != self.id:
+            receiver = self.requestQueue.pop()
+            self.messageSender(receiver,"P")
 
     def statusPrinter(self, statusMessage = ""):
         if statusMessage !="":
@@ -75,7 +85,6 @@ class Node :
             print("ADVISE_4 message from node " + sender + " received")
         else:
             print("I DO NOT KNOW")
-
         print("New status :")
         self.statusPrinter()
         print("#####End of message treatment#####")
@@ -101,7 +110,7 @@ class Node :
                 self.messageSender(self.holder, "P")
 
     def critical_section(self):
-        sleep(3)
+        time.sleep(3)
 
     def createReceiveQueue(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -143,3 +152,5 @@ class Node :
                               body=payload)
         print(" [x] Sent %r:%r" % (destination, payload))
         connection.close()
+
+node1 = Node("A")
