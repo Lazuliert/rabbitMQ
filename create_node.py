@@ -1,8 +1,8 @@
-from Node import *
+from Node_V2 import *
 import sys
 
 name = sys.argv[1]
 
-node = Node(name)
+node = Node_V2(name)
 
 node.beginReceiver()

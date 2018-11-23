@@ -4,28 +4,7 @@ from tree import tree
 import pika
 import time
 
-class Node :
-
-    class ResourceUserThread(threading.Thread):
-        def __init__(self):
-            self.id = id
-            threading.Thread.__init__(self)
-            self.inCriticalSection = False
-            self.privilege = None
-
-        def run(self):
-            while True:
-                if self.inCriticalSection == False:
-                    request = input("Type anything to ask for the resource")
-                    print(request)
-                else:
-                    request = input("type anything to stop using privilege")
-                    print("input 1", request)
-
-        def enterCriticalSection(self):
-            print("entering critical section")
-            self.inCriticalSection = True
-            self.privilege = Privilege(self.id)
+class Node_V2 :
 
     def __init__(self, id):
         if id in ["A", "B", "C", "D", "E", "F"]:
@@ -50,9 +29,6 @@ class Node :
             self.asked = False
 
             self.createReceiveQueue()
-
-            thread = self.ResourceUserThread(id)
-            thread.start()
             self.beginReceiver()
 
 
@@ -107,17 +83,23 @@ class Node :
             print("ADVISE_3 message from node " + sender + " received")
         elif mtype == "Z":
             print("ADVISE_4 message from node " + sender + " received")
+        elif mtype == "C":
+            print("wish CRITICAL message from node " + sender + " received")
+            self.requestQueue.append(self.id)
+            self.assign_privilege()
+            self.make_request()
+
         else:
             print("I DO NOT KNOW")
         print("New status :")
         self.statusPrinter()
         print("#####End of message treatment#####")
 
-    def initialize(self, sender):
-        self.holder = sender
+    def initialize(self,sender):
+        self.holder=sender
         if self.neighbors != [sender]:
             receivers = []
-            for neighbor in self.neighbors :
+            for neighbor in self.neighbors:
                 if neighbor != sender:
                     receivers.append(neighbor)
 
@@ -139,6 +121,7 @@ class Node :
             self.asked = True
 
     def critical_section(self):
+        print("I'm using the critical section")
         time.sleep(3)
 
     def createReceiveQueue(self):
@@ -181,5 +164,3 @@ class Node :
                               body=payload)
         print(" [x] Sent %r:%r" % (destination, payload))
         connection.close()
-
-node1 = Node("A")
