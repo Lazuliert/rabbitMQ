@@ -78,7 +78,7 @@ class Node(threading.Thread):
         mtype = message[1]
         print("sender" + sender)
         print("mtype" + mtype)
-        self.statusPrinter()
+        #self.statusPrinter()
         if mtype =="I":
             print("INITIALIZE message from node " + sender + " received")
             self.initialize(sender)
@@ -89,7 +89,7 @@ class Node(threading.Thread):
             self.make_request()
         elif mtype =="Q":
             print("REQUEST message from node " + sender + " received")
-            self.requestQueue.add(sender)
+            self.requestQueue.append(sender)
             self.assign_privilege()
             self.make_request()
         elif mtype =="S":
@@ -105,7 +105,7 @@ class Node(threading.Thread):
         else:
             print("I DO NOT KNOW")
         print("New status :")
-        self.statusPrinter()
+        #self.statusPrinter()
         print("#####End of message treatment#####")
 
     def make_request(self):
@@ -117,15 +117,16 @@ class Node(threading.Thread):
     """
     méthode appelée à la reception d'un message initialize
     """
-    def initialize(self,sender):
-        if self.neighbors == [sender]:
+    def initialize(self, sender):
+        self.holder = sender
+        if self.neighbors != [sender]:
             receivers = []
             for neighbor in self.neighbors :
                 if neighbor != sender:
                     receivers.append(neighbor)
 
             self.messageSender(".".join(receivers), "I")
-            self.holder = sender
+
 
 
     def assign_privilege(self):
@@ -176,11 +177,26 @@ class Node(threading.Thread):
 
     def exitCriticalSection(self):
         self.privilege.deconnexion()
+        self.using = False
+        self.assign_privilege()
+        self.make_request()
+
+    def makeWish(self):
+        #le noeud se met lui-même dans la queue
+        self.requestQueue.append(self.id)
+        #utilise assign_privilege
+        self.assign_privilege()
+        #utilise make_request
+        self.make_request()
 
 nodes = {}
 for nodeId in tree.keys() :
-    nodes[nodeId] = Node(nodeId)
-    nodes[nodeId].start()
+    if nodeId != "A":
+        nodes[nodeId] = Node(nodeId)
+        nodes[nodeId].start()
+
+nodes["A"] = Node("A")
+nodes["A"].start()
 
 
 while True:
@@ -189,10 +205,12 @@ while True:
         node = nodes[request]
         if node.using:
             print(request + " will know stop using the privilege")
-        elif node.holder == request:
-            print("node " + request + " has the privilege but is not using it. Nothing happens.")
+
+            node.exitCriticalSection()
         else:
+            node.statusPrinter()
             print(request + " will now ask for the privilege for himself" )
+            node.makeWish()
     elif request[0] == "C" and len(request)==3:
         holder_id = request[2]
         if holder_id in nodes:
