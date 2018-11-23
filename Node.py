@@ -2,7 +2,6 @@ from Privilege import Privilege
 import threading
 from tree import tree
 import pika
-import time
 
 
 class Node(threading.Thread):
@@ -34,11 +33,16 @@ class Node(threading.Thread):
             self.channel = None
             self.createQueue()
 
+            self.privilege=None
+
 
 
         else:
             raise Exception("Id not valid")
 
+    """
+    method inherited and overloaded from class Thread. Called when the thread starts.
+    """
     def run(self):
         """This function is blocking"""
         print(" *** Node " + self.id + " waiting for messages .To exit press CTRL+C")
@@ -51,7 +55,6 @@ class Node(threading.Thread):
                                    queue=self.queue_name,
                                    no_ack=True)
         self.channel.start_consuming()
-
 
     """
     fonction qui afficher l'état de tous les attributs du node
@@ -105,6 +108,12 @@ class Node(threading.Thread):
         self.statusPrinter()
         print("#####End of message treatment#####")
 
+    def make_request(self):
+        if (self.holder != self.id) & (self.requestQueue != []) & (self.asked == False):
+            self.messageSender(self.holder, "Q")
+            self.asked = True
+
+
     """
     méthode appelée à la reception d'un message initialize
     """
@@ -131,7 +140,7 @@ class Node(threading.Thread):
 
     """function called when entering the critical section"""
     def critical_section(self):
-        time.sleep(3)
+        self. privilege = Privilege(self.id)
 
     """
     méthod creating and connecting to the queue
@@ -165,18 +174,33 @@ class Node(threading.Thread):
         print(" [x] Sent %r:%r" % (destination, payload))
         connection.close()
 
-nodes = []
-for nodeId in tree.keys() :
-    nodes.append(Node(nodeId))
+    def exitCriticalSection(self):
+        self.privilege.deconnexion()
 
-for node in nodes:
-    node.start()
+nodes = {}
+for nodeId in tree.keys() :
+    nodes[nodeId] = Node(nodeId)
+    nodes[nodeId].start()
+
 
 while True:
     request = input("would you like to do something?")
-    if len(request) == 1:
-        print(request+" will now ask for the privilege/relinquish the privilege")
+    if request in ["A", "B", "C", "D", "E", "F"]:
+        node = nodes[request]
+        if node.using:
+            print(request + " will know stop using the privilege")
+        elif node.holder == request:
+            print("node " + request + " has the privilege but is not using it. Nothing happens.")
+        else:
+            print(request + " will now ask for the privilege for himself" )
+    elif request[0] == "C" and len(request)==3:
+        holder_id = request[2]
+        if holder_id in nodes:
+            print("node " + holder_id + " will now be stopped")
+        else:
+            print("node " + holder_id + " will now restart")
+
     else:
-        print(request+ "will know be killed/restarted")
+        print("Invalid command")
 
 
