@@ -164,10 +164,10 @@ class Node(threading.Thread):
     def store_advice(self, sender, advice):
         if advice == 'W':
             self.holder_advices[sender] = self.id
-            self.asked_advices[sender] = True
+            self.asked_advices[sender] = False
         elif advice == 'X':
             self.holder_advices[sender] = self.id
-            self.asked_advices[sender] = False
+            self.asked_advices[sender] = True
         elif advice=='Y':
             self.holder_advices[sender]= sender
             self.rq_in_advices[sender] = False
@@ -178,7 +178,7 @@ class Node(threading.Thread):
             print("Unknown advice")
 
         if len(self.holder_advices) == len(self.neighbors): # All advices received
-
+            print("Reconstructing data...")
             if self.holder == "": # Je n'ai pas recu le message PRIVILEGE entre temps
                 holder_flag = True
                 for key in self.holder_advices:
@@ -208,6 +208,7 @@ class Node(threading.Thread):
             # de son asked. Si son asked est vrai, alors il veut le privilege
             # et je le met dans ma liste de requetes
             self.recovering = False
+            self.status_printer("Status after recovering")
             self.assign_privilege()
             self.make_request()
             # Maintenant que je possede toutes les infos, je peux reprendre le
@@ -315,6 +316,7 @@ while True:
     request = input("would you like to do something?")
     if request in ["A", "B", "C", "D", "E", "F"]:
         node = nodes[request]
+        node.status_printer()
         if node.stopped :
             print("This node is stopped. It will do nothing")
         elif node.using:
@@ -330,6 +332,7 @@ while True:
     elif request[0] == "C" and len(request)==3:
         holder_id = request[2]
         node = nodes[holder_id]
+        node.status_printer()
         if node.stopped == False:
             print("node " + holder_id + " will now be stopped")
             node.stop()
