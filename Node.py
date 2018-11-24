@@ -189,6 +189,9 @@ class Node(threading.Thread):
         #utilise make_request
         self.make_request()
 
+    def delete_Thread(self):
+        self.delete_Thread()
+
 nodes = {}
 for nodeId in tree.keys() :
     if nodeId != "A":
@@ -211,6 +214,7 @@ while True:
             node.statusPrinter()
             print(request + " will now ask for the privilege for himself" )
             node.makeWish()
+
     elif request[0] == "C" and len(request)==3:
         holder_id = request[2]
         if holder_id in nodes:
