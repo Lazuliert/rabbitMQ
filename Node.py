@@ -1,37 +1,18 @@
 from Privilege import Privilege
-from ResourceUserThread import ResourceUserThread
+import threading
 from tree import tree
 import pika
-import time
 
-class Node :
 
-    class ResourceUserThread(threading.Thread):
-        def __init__(self):
-            self.id = id
-            threading.Thread.__init__(self)
-            self.inCriticalSection = False
-            self.privilege = None
+class Node(threading.Thread):
 
-        def run(self):
-            while True:
-                if self.inCriticalSection == False:
-                    request = input("Type anything to ask for the resource")
-                    print(request)
-                else:
-                    request = input("type anything to stop using privilege")
-                    print("input 1", request)
+    def __init__(self, holderId):
 
-        def enterCriticalSection(self):
-            print("entering critical section")
-            self.inCriticalSection = True
-            self.privilege = Privilege(self.id)
-
-    def __init__(self, id):
-        if id in ["A", "B", "C", "D", "E", "F"]:
-            self.id = id
-            self.neighbors = tree[id]["neighbors"]
-            if id == "A" :
+        threading.Thread.__init__(self)
+        if holderId in ["A", "B", "C", "D", "E", "F"]:
+            self.id = holderId
+            self.neighbors = tree[holderId]["neighbors"]
+            if holderId == "A" :
                 self.holder = "A"
                 self.messageSender(".".join(self.neighbors), "I")
             else:
@@ -49,25 +30,37 @@ class Node :
             # False otherwise.
             self.asked = False
 
-            self.createReceiveQueue()
+            self.channel = None
+            self.createQueue()
 
-            thread = ResourceUserThread(id)
-            thread.start()
-            self.beginReceiver()
+            self.privilege=None
+
 
 
         else:
             raise Exception("Id not valid")
 
+    """
+    method inherited and overloaded from class Thread. Called when the thread starts.
+    """
+    def run(self):
+        """This function is blocking"""
+        print(" *** Node " + self.id + " waiting for messages .To exit press CTRL+C")
 
+        def callback(obj, ch, method, properties, body):
+            print(" [x] routing_key ; body %r:%r" % (method.routing_key, body))
+            obj.receiveManager(body)
 
-    def passPrivilege(self):
-        if self.requestQueue[0] != self.id:
-            receiver = self.requestQueue.pop()
-            self.messageSender(receiver,"P")
+        self.channel.basic_consume(lambda ch, method, properties, body: callback(self, ch, method, properties, body),
+                                   queue=self.queue_name,
+                                   no_ack=True)
+        self.channel.start_consuming()
 
+    """
+    fonction qui afficher l'état de tous les attributs du node
+    """
     def statusPrinter(self, statusMessage = ""):
-        if statusMessage !="":
+        if statusMessage != "":
             statusMessage= "Status of node " + self.id
         print(statusMessage)
         print("holder : " + self.holder)
@@ -75,6 +68,9 @@ class Node :
         print("using : " + str(self.using))
         print("asked : " + str(self.asked))
 
+    """
+    fonction appelée quand il reçoit un message et reroot vers la bonne méthode
+    """
     def receiveManager(self, message):
         print("#####Message Received !#####")
         message = message.decode('UTF-8')
@@ -82,7 +78,7 @@ class Node :
         mtype = message[1]
         print("sender" + sender)
         print("mtype" + mtype)
-        self.statusPrinter()
+        #self.statusPrinter()
         if mtype =="I":
             print("INITIALIZE message from node " + sender + " received")
             self.initialize(sender)
@@ -93,7 +89,7 @@ class Node :
             self.make_request()
         elif mtype =="Q":
             print("REQUEST message from node " + sender + " received")
-            self.requestQueue.add(sender)
+            self.requestQueue.append(sender)
             self.assign_privilege()
             self.make_request()
         elif mtype =="S":
@@ -109,21 +105,32 @@ class Node :
         else:
             print("I DO NOT KNOW")
         print("New status :")
-        self.statusPrinter()
+        #self.statusPrinter()
         print("#####End of message treatment#####")
 
-    def initialize(self,sender):
-        if self.neighbors == [sender]:
+    def make_request(self):
+        if (self.holder != self.id) & (self.requestQueue != []) & (self.asked == False):
+            self.messageSender(self.holder, "Q")
+            self.asked = True
+
+
+    """
+    méthode appelée à la reception d'un message initialize
+    """
+    def initialize(self, sender):
+        self.holder = sender
+        if self.neighbors != [sender]:
             receivers = []
             for neighbor in self.neighbors :
                 if neighbor != sender:
                     receivers.append(neighbor)
 
             self.messageSender(".".join(receivers), "I")
-            self.holder = sender
+
+
 
     def assign_privilege(self):
-        if (self.holder == self.id) & (self.using == False) & (self.requestQueue!=[]):
+        if (self.holder == self.id) & (self.using is False) & (self.requestQueue != []):
             self.holder = self.requestQueue.pop(0)
             self.asked = False
             if self.holder == self.id:
@@ -132,34 +139,26 @@ class Node :
             else:
                 self.messageSender(self.holder, "P")
 
+    """function called when entering the critical section"""
     def critical_section(self):
-        time.sleep(3)
+        self. privilege = Privilege(self.id)
 
-    def createReceiveQueue(self):
+    """
+    méthod creating and connecting to the queue
+    """
+    def createQueue(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         self.channel = connection.channel()
         self.channel.exchange_declare(exchange='topic_KRaymond',
                                       exchange_type='topic')
         result = self.channel.queue_declare(exclusive=True)
         self.queue_name = result.method.queue
-        binding_key = "#."+ self.id +".#"
+        binding_key = "#."+ self.id + ".#"
         self.channel.queue_bind(exchange='topic_KRaymond',
                                 queue = self.queue_name,
                                 routing_key=binding_key)
-        print(" *** Node " + self.id +" declared queue with binding key " + binding_key + " .")
+        print(" *** Node " + self.id + " declared queue with binding key " + binding_key + " .")
 
-    def beginReceiver(self):
-        """This function is blocking"""
-        print(" *** Node " + self.id + " waiting for messages .To exit press CTRL+C")
-
-        def callback(obj, ch, method, properties, body):
-            print(" [x] routing_key ; body %r:%r" % (method.routing_key, body))
-            obj.receiveManager(body)
-
-        self.channel.basic_consume(lambda ch, method, properties, body: callback(self, ch, method, properties, body),
-                                   queue=self.queue_name,
-                                   no_ack=True)
-        self.channel.start_consuming()
 
     def messageSender(self, destination, message):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -176,4 +175,58 @@ class Node :
         print(" [x] Sent %r:%r" % (destination, payload))
         connection.close()
 
-node1 = Node("A")
+    def exitCriticalSection(self):
+        self.privilege.deconnexion()
+        self.using = False
+        self.assign_privilege()
+        self.make_request()
+
+    def makeWish(self):
+        #le noeud se met lui-même dans la queue
+        self.requestQueue.append(self.id)
+        #utilise assign_privilege
+        self.assign_privilege()
+        #utilise make_request
+        self.make_request()
+
+    def delete_Thread(self):
+        return
+
+nodes = {}
+for nodeId in tree.keys() :
+    if nodeId != "A":
+        nodes[nodeId] = Node(nodeId)
+        nodes[nodeId].daemon = True
+        nodes[nodeId].start()
+
+nodes["A"] = Node("A")
+nodes["A"].daemon = True
+nodes["A"].start()
+
+
+while True:
+    request = input("would you like to do something?")
+    if request in ["A", "B", "C", "D", "E", "F"]:
+        node = nodes[request]
+        if node.using:
+            print(request + " will know stop using the privilege")
+
+            node.exitCriticalSection()
+        else:
+            node.statusPrinter()
+            print(request + " will now ask for the privilege for himself" )
+            node.makeWish()
+
+    elif request[0] == "C" and len(request)==3:
+        holder_id = request[2]
+        if holder_id in nodes:
+            print("node " + holder_id + " will now be stopped")
+            nodes[request[2]].delete_Thread()
+            print(nodes[request[2]].is_alive())
+        else:
+            print("node " + holder_id + " will now restart")
+
+    else:
+        print("Invalid command")
+
+
