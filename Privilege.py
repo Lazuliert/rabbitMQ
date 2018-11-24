@@ -11,7 +11,7 @@ class Privilege :
             Privilege.inUse=True
         else:
             raise Exception("The resource is already being used by " + Privilege.path[-1])
-    def deconnexion(self):
+    def deconnection(self):
         print(self.holder+" se déconnecte")
         Privilege.inUse = False
 
