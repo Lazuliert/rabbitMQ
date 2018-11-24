@@ -1,14 +1,17 @@
 from Privilege import Privilege
-import threading
+from ResourceUserThread import ResourceUserThread
 from tree import tree
+import threading
 import pika
 from time import sleep
 
 class Node(threading.Thread):
 
+
     def __init__(self, holder_id):
 
         threading.Thread.__init__(self)
+
         if holder_id in ["A", "B", "C", "D", "E", "F"]:
             self.id = holder_id
             self.neighbors = tree[holder_id]["neighbors"]
@@ -300,9 +303,11 @@ nodes = {}
 for nodeId in tree.keys() :
     if nodeId != "A":
         nodes[nodeId] = Node(nodeId)
+        nodes[nodeId].daemon = True
         nodes[nodeId].start()
 
 nodes["A"] = Node("A")
+nodes["A"].daemon = True
 nodes["A"].start()
 
 
@@ -320,6 +325,7 @@ while True:
             node.status_printer()
             print(request + " will now ask for the privilege for himself" )
             node.make_wish()
+
 
     elif request[0] == "C" and len(request)==3:
         holder_id = request[2]
