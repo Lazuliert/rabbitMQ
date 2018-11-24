@@ -6,7 +6,7 @@ import pika
 
 class Node(threading.Thread):
 
-    def __init__(self, holderId):
+    def __init__(self, holderId, restart=False):
 
         threading.Thread.__init__(self)
         if holderId in ["A", "B", "C", "D", "E", "F"]:
@@ -104,7 +104,7 @@ class Node(threading.Thread):
             print("ADVISE_4 message from node " + sender + " received")
         else:
             print("I DO NOT KNOW")
-        print("New status :")
+        #print("New status :")
         #self.statusPrinter()
         print("#####End of message treatment#####")
 
@@ -214,9 +214,12 @@ while True:
     elif request[0] == "C" and len(request)==3:
         holder_id = request[2]
         if holder_id in nodes:
+            node = nodes[holder_id]
             print("node " + holder_id + " will now be stopped")
+            
         else:
             print("node " + holder_id + " will now restart")
+
 
     else:
         print("Invalid command")
