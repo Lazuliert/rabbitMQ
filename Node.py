@@ -216,7 +216,7 @@ while True:
         if holder_id in nodes:
             node = nodes[holder_id]
             print("node " + holder_id + " will now be stopped")
-            
+
         else:
             print("node " + holder_id + " will now restart")
 
