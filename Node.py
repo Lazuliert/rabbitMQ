@@ -1,12 +1,19 @@
 from Privilege import Privilege
-import threading
+from ResourceUserThread import ResourceUserThread
 from tree import tree
 import pika
+import time
 
-
-class Node(threading.Thread):
+class Node :
 
     def __init__(self, holderId):
+
+        threading.Thread.__init__(self)
+        if holderId in ["A", "B", "C", "D", "E", "F"]:
+            self.id = holderId
+            self.neighbors = tree[holderId]["neighbors"]
+            if holderId == "A" :
+    def __init__(self, holderId, restart=False):
 
         threading.Thread.__init__(self)
         if holderId in ["A", "B", "C", "D", "E", "F"]:
