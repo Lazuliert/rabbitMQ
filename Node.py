@@ -209,6 +209,9 @@ class Node(threading.Thread):
             # et je le met dans ma liste de requetes
             self.recovering = False
             self.status_printer("Status after recovering")
+            self.asked_advices = {}
+            self.holder_advices = {}
+            self.rq_in_advices = {}
             self.assign_privilege()
             self.make_request()
             # Maintenant que je possede toutes les infos, je peux reprendre le
